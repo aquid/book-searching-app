@@ -1,0 +1,8 @@
+{
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "vscode.configuration-editing",
+    "editor.tabCompletion": "on",
+    "eslint.alwaysShowStatus": true,
+    "eslint.autoFixOnSave": true,
+    // "prettier.eslintIntegration": true,
+}
