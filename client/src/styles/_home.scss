@@ -1,0 +1,9 @@
+.homeBaseContainer {
+  .homeJumbotron {
+    background-image: url('../assets/images/Pattern.svg');
+    background-size: cover;
+    p {
+      color: $body-color;
+    }
+  }
+}
