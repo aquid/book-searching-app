@@ -1,4 +1,6 @@
-import React from 'react';
+// @flow
+import React, { useContext } from 'react';
+import { useHistory } from "react-router-dom";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -10,9 +12,9 @@ import History from '../../assets/images/History.svg';
 import Humour from '../../assets/images/Humour.svg';
 import Philosophy from '../../assets/images/Philosophy.svg';
 import Politics from '../../assets/images/Politics.svg';
+import { SearchContext } from '../../context/SearchContext';
 
 const GenreCard = (props) => {
-
   const getGenreImage = (genreValue) => {
     switch (genreValue) {
       case 'fiction':
@@ -31,14 +33,25 @@ const GenreCard = (props) => {
         return Politics;
     }
   };
+
+  const { setSearchQuery, setSearchTitle } = useContext(SearchContext);
+  let history = useHistory();
+
+  const _redirectToSearch = (searchTerm, title) => (event) => {
+    console.log(searchTerm);
+    setSearchQuery(searchTerm);
+    setSearchTitle(title);
+    history.push("/books");
+  };
+
   return(
-    <Container className='genreCardContainer' tabindex="1" onMouseUp={(event) => event.preventDefault()}>
+    <Container className='genreCardContainer' tabIndex="1" onClick={_redirectToSearch(props.value, props.title)}>
       <Row noGutters={true}>
         <Col xs={2}>
           <img className='genreImage' src={getGenreImage(props.value)} alt={props.title} />
         </Col>
         <Col xs={9}>
-          text
+          {props.title}
         </Col>
         <Col xs={1}>
           <img src={Next} alt='Next'/>

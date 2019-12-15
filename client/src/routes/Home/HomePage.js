@@ -4,10 +4,10 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Jumbotron from 'react-bootstrap/Jumbotron';
-import GenreCard from './genreCard';
+import GenreCard from './GenreCard';
 
 const Home = () => {
-  const [genre, setGenre] = useState([
+  const [genre] = useState([
     { title: 'Fiction', value: 'fiction'},
     { title: 'Philosophy', value: 'philosophy'},
     { title: 'Drama', value: 'drama' },

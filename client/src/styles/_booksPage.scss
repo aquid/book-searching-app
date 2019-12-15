@@ -1,0 +1,65 @@
+.booksSearchContainer {
+  background-color: $white;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  .backButton {
+    align-items: center;
+    margin-bottom: 20px;
+    cursor: pointer;
+    img {
+      margin-right: 10px;
+    }
+    h2{
+      font-size: $h2-font-size;
+      color: $primary;
+      margin-bottom: 0;
+    }
+  }
+
+  .inputSection {
+    .inputGroup {
+      border-radius: 4px;
+      &.active {
+        border: 1px solid $primary;
+      }
+      .searchIcon, .closeIcon {
+        .input-group-text {
+          cursor: pointer;
+          background-color: $grey-light;
+          border: none;
+          color: $input-color;
+          font-weight: 400;
+          font-size: 16px;
+          height: 40px;
+        }
+      }
+      .inputTextArea {
+        border: none;
+        background-color: $grey-light;
+        color: $body-color;
+        font-weight: 300;
+        font-size: 16px;
+        height: 40px;
+        @include placeholder {
+          font-weight: 400;
+          font-size: 16px;
+          color: $input-color;
+        }
+        &:focus {
+          border: none;
+          box-shadow: none;
+        }
+      }
+      .closeIcon {
+        .input-group-text {
+          .cancleIcon {
+            display: none;
+            &.active {
+              display: block;
+            }
+          }
+        }
+      }
+    }
+  }
+}

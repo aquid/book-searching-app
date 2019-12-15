@@ -1,3 +1,4 @@
+// @flow
 import React from 'react';
 import './App.scss';
 import {
@@ -5,23 +6,24 @@ import {
   Switch,
   Route,
 } from "react-router-dom";
-
-
-import Home from 'routes/Home/Home';
-import Books from 'routes/Books';
+import SearchContextProvider from 'context/SearchContext';
+import Home from 'routes/Home/HomePage';
+import BooksPage from 'routes/Book/BooksPage';
 
 function App() {
   return (
-    <Router>
-      <Switch>
-        <Route path="/books">
-          <Books />
-        </Route>
-        <Route path="/">
-          <Home />
-        </Route>
-      </Switch>
-    </Router>
+    <SearchContextProvider>
+      <Router>
+        <Switch>
+          <Route path="/books">
+            <BooksPage />
+          </Route>
+          <Route path="/">
+            <Home />
+          </Route>
+        </Switch>
+      </Router>
+    </SearchContextProvider>
   );
 }
 
