@@ -1,8 +1,6 @@
-import React, { useContext } from 'react';
-import { useHistory } from "react-router-dom";
+import React from 'react';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
 
 const BookCard = (prop) => {
   return (

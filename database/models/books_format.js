@@ -1,7 +1,7 @@
 /* jshint indent: 1 */
 
 module.exports = function (sequelize, DataTypes) {
-  return sequelize.define('books_format', {
+  const Formats = sequelize.define('Formats', {
     id: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -26,5 +26,15 @@ module.exports = function (sequelize, DataTypes) {
     },
   }, {
     tableName: 'books_format',
+    timestamps: false,
   });
+
+  Formats.associate = function (models) {
+    Formats.belongsTo(models.Books, {
+      foreignKey: 'book_id',
+      as: 'books',
+    });
+  };
+
+  return Formats;
 };

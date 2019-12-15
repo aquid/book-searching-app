@@ -1,7 +1,7 @@
 /* jshint indent: 1 */
 
 module.exports = function (sequelize, DataTypes) {
-  return sequelize.define('books_book', {
+  const Books = sequelize.define('Books', {
     id: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -29,4 +29,36 @@ module.exports = function (sequelize, DataTypes) {
     tableName: 'books_book',
     timestamps: false,
   });
+
+  Books.associate = function (models) {
+    Books.belongsToMany(models.Author, {
+      foreignKey: 'book_id',
+      as: 'authors',
+      through: 'books_book_authors',
+    });
+
+    Books.belongsToMany(models.BookShelves, {
+      foreignKey: 'book_id',
+      as: 'bookshelves',
+      through: 'books_book_bookshelves',
+    });
+
+    Books.belongsToMany(models.Languages, {
+      foreignKey: 'book_id',
+      as: 'languages',
+      through: 'books_book_languages',
+    });
+
+    Books.belongsToMany(models.Subjects, {
+      foreignKey: 'book_id',
+      as: 'subjects',
+      through: 'books_book_subjects',
+    });
+
+    Books.hasMany(models.Formats, {
+      foreignKey: 'book_id',
+      as: 'formats',
+    });
+  };
+  return Books;
 };

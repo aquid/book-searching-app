@@ -1,7 +1,7 @@
 /* jshint indent: 1 */
 
 module.exports = function (sequelize, DataTypes) {
-  return sequelize.define('books_author', {
+  const Author = sequelize.define('Author', {
     id: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -22,5 +22,15 @@ module.exports = function (sequelize, DataTypes) {
     },
   }, {
     tableName: 'books_author',
+    timestamps: false,
   });
+
+  Author.associate = function (models) {
+    Author.belongsToMany(models.Books, {
+      foreignKey: 'author_id',
+      as: 'books',
+      through: 'books_book_authors',
+    });
+  };
+  return Author;
 };
