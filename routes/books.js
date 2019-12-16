@@ -30,8 +30,8 @@ router.get('/', async (req, res) => {
     if (req.query && req.query.languages) req.query.languages = req.query.languages.split(',');
     if (req.query && req.query.search) req.query.search = req.query.search.split(' ');
     if (req.query && req.query.topic) req.query.topic = req.query.topic.split(',');
-    if (req.query && req.query.author) req.query.author = req.query.author.split(',');
-    if (req.query && req.query.title) req.query.title = req.query.title.split(',');
+    if (req.query && req.query.author) req.query.author = req.query.author.split(' ');
+    if (req.query && req.query.title) req.query.title = req.query.title.split(' ');
 
     const result = await BooksController.find(req.query);
     return res.status(200).send(result);

@@ -6,12 +6,25 @@ const {
 
 const { Op } = Sequelize;
 
-
+/**
+ * Joi validator schema for the request filter
+ * which is to be sent with the API. This schema
+ * defined which keys are allowed and which aren't
+ */
 const ParamsFilter = Joi.object({
   ids: Joi.array().items(Joi.string(), Joi.number()).single(),
   search: Joi.array().items(Joi.string()).single(),
+  languages: Joi.array().items(Joi.string()).single(),
+  topic: Joi.array().items(Joi.string()).single(),
+  author: Joi.array().items(Joi.string()).single(),
+  title: Joi.array().items(Joi.string()).single(),
 });
 
+/**
+ * A simple function return an empty filter object
+ * for queries to help them create fresh copies of
+ * filter object.
+ */
 const getQueryFilter = () => ({
   include: [
     {
@@ -25,21 +38,25 @@ const getQueryFilter = () => ({
       model: BookShelves,
       as: 'bookshelves',
       attributes: ['name'],
+      where: {},
       through: { attributes: [] },
     },
     {
       model: Subjects,
       as: 'subjects',
+      where: {},
       through: { attributes: [] },
     },
     {
       model: Languages,
       as: 'languages',
+      where: {},
       through: { attributes: [] },
     },
     {
       model: Formats,
       as: 'formats',
+      where: {},
       attributes: ['mime_type', 'url'],
     },
   ],
@@ -50,7 +67,62 @@ const getQueryFilter = () => ({
 });
 
 
-const buildFilter = (filter, queryFilter, lastIndex, searchKey) => {
+/**
+ * @description
+ *  - this function is the child function used to build nested filter for
+ *    main filter function name - `buildFilter`. Build filtes passes down
+ *    the child nested object filter to be update and with correct params
+ *    the main filter object is built.
+ *
+ *    A sample of the filter Object can be found above in the `getQueryFilter`
+ *    function. This function is mostly for the includes
+ *
+ *
+ * @param {*} filter - filter passed from the user
+ * @param {*} queryFilter - include filter passed from buildFilter function
+ * @param {*} type - type of the search or keyword of the search
+ * @param {*} key - key to which databse query is to be made
+ * @param {*} operator - what kind of operator is needed eg - like, ilike, in,
+ * @param {*} isInArray - is the filter just value of array to passed for SQL IN query
+ * @param {*} isRegexLike - is the search of case insensetive regex type
+ */
+const buildIncludeFilter = (filter, queryFilter, type, key, operator, isInArray, isRegexLike) => {
+  if (isInArray) {
+    if (queryFilter.where && queryFilter.where[Op.or]) {
+      queryFilter[Op.or].push({ [key]: { [Op.in]: filter[type] } });
+    } else {
+      // eslint-disable-next-line no-param-reassign
+      queryFilter.where[Op.or] = [];
+      queryFilter.where[Op.or].push({ [key]: { [Op.in]: filter[type] } });
+    }
+  } else if (isRegexLike) {
+    if (queryFilter.where && queryFilter.where[Op.or]) {
+      filter[type].forEach((text) => {
+        queryFilter.where[Op.or].push({ [key]: { [Op[operator]]: `${text}%` } });
+      });
+    } else {
+      // eslint-disable-next-line no-param-reassign
+      queryFilter.where[Op.or] = [];
+      filter[type].forEach((text) => {
+        queryFilter.where[Op.or].push({ [key]: { [Op.iLike]: `${text}%` } });
+      });
+    }
+  }
+};
+
+
+/**
+ * @description
+ *  - this function builds the main filter object which is to be
+ *    passed to the SQL query. Based on the variour types of search
+ *    allowed, this function create valid set of SQL queries for the
+ *    search to return accurate results.
+ *
+ *
+ * @param {*} filter - main filter object passed from API request
+ * @param {*} queryFilter - the SQL query filter wrapper for making query
+ */
+const buildFilter = (filter, queryFilter) => {
   const filterCopy = { ...queryFilter };
   if (filter.ids) {
     if (filterCopy.where && filterCopy.where[Op.or]) {
@@ -61,24 +133,38 @@ const buildFilter = (filter, queryFilter, lastIndex, searchKey) => {
     }
   }
 
-  if (filter.search) {
+  if (filter.search || filter.title) {
     if (filterCopy.where && filterCopy.where[Op.or]) {
       filter.search.forEach((text) => {
-        filterCopy.where[Op.or].push({ [searchKey]: { [Op.iLike]: `${text}%` } });
+        filterCopy.where[Op.or].push({ title: { [Op.iLike]: `${text}%` } });
       });
-      if (!lastIndex) {
-        buildFilter(filter, filterCopy.include[0], true, 'name');
+      if (!filter.title) {
+        buildIncludeFilter(filter, filterCopy.include[0], 'search', 'name', 'iLike', false, true);
       }
     } else {
       filterCopy.where[Op.or] = [];
       filter.search.forEach((text) => {
-        filterCopy.where[Op.or].push({ [searchKey]: { [Op.iLike]: `${text}%` } });
+        filterCopy.where[Op.or].push({ title: { [Op.iLike]: `${text}%` } });
       });
-      if (!lastIndex) {
-        buildFilter(filter, filterCopy.include[0], true, 'name');
+      if (!filter.title) {
+        buildIncludeFilter(filter, filterCopy.include[0], 'search', 'name', 'iLike', false, true);
       }
     }
   }
+
+  if (filter.languages) {
+    buildIncludeFilter(filter, filterCopy.include[3], 'languages', 'code', 'in', true, false);
+  }
+
+  if (filter.topic) {
+    buildIncludeFilter(filter, filterCopy.include[1], 'topic', 'name', 'iLike', false, true);
+    buildIncludeFilter(filter, filterCopy.include[2], 'topic', 'name', 'iLike', false, true);
+  }
+
+  if (filter.author) {
+    buildIncludeFilter(filter, filterCopy.include[0], 'author', 'name', 'iLike', false, true);
+  }
+
   return filterCopy;
 };
 
@@ -110,10 +196,16 @@ class BooksController {
     this.buildFilter = buildFilter;
   }
 
+  /**
+   * @description - The find controller function which does all the
+   * searching and sorting of the API request.
+   *
+   * @param {*} filter
+   */
   async find(filter) {
     try {
       await this.paramsFilter.validateAsync(filter);
-      const filterGen = this.buildFilter(filter, getQueryFilter(), false, 'title');
+      const filterGen = this.buildFilter(filter, getQueryFilter());
 
       const result = await Books.findAndCountAll(filterGen);
 
