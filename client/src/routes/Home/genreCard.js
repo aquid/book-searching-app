@@ -38,7 +38,6 @@ const GenreCard = (props) => {
   let history = useHistory();
 
   const _redirectToSearch = (searchTerm, title) => (event) => {
-    console.log(searchTerm);
     setSearchQuery(searchTerm);
     setSearchTitle(title);
     history.push("/books");

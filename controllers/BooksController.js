@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 const debug = require('debug')('expense-management-app:controller:user');
 const Joi = require('@hapi/joi');
 const {
@@ -5,6 +6,7 @@ const {
 } = require('../database/models');
 
 const { Op } = Sequelize;
+const PAGE_LIMIT = 25;
 
 /**
  * Joi validator schema for the request filter
@@ -18,6 +20,7 @@ const ParamsFilter = Joi.object({
   topic: Joi.array().items(Joi.string()).single(),
   author: Joi.array().items(Joi.string()).single(),
   title: Joi.array().items(Joi.string()).single(),
+  page: Joi.number(),
 });
 
 /**
@@ -31,38 +34,38 @@ const getQueryFilter = () => ({
       model: Author,
       as: 'authors',
       attributes: ['birth_year', 'death_year', 'name'],
-      where: {},
+      // where: {},
       through: { attributes: [] },
     },
     {
       model: BookShelves,
       as: 'bookshelves',
       attributes: ['name'],
-      where: {},
+      // where: {},
       through: { attributes: [] },
     },
     {
       model: Subjects,
       as: 'subjects',
-      where: {},
+      // where: {},
       through: { attributes: [] },
     },
     {
       model: Languages,
       as: 'languages',
-      where: {},
+      // where: {},
       through: { attributes: [] },
     },
     {
       model: Formats,
       as: 'formats',
-      where: {},
+      // where: {},
       attributes: ['mime_type', 'url'],
     },
   ],
   limit: 25,
   distinct: true,
-  where: {},
+  // where: {},
   order: [['download_count', 'DESC NULLS LAST']],
 });
 
@@ -91,20 +94,20 @@ const buildIncludeFilter = (filter, queryFilter, type, key, operator, isInArray,
     if (queryFilter.where && queryFilter.where[Op.or]) {
       queryFilter[Op.or].push({ [key]: { [Op.in]: filter[type] } });
     } else {
-      // eslint-disable-next-line no-param-reassign
+      queryFilter.where = !queryFilter.where ? {} : queryFilter.where;
       queryFilter.where[Op.or] = [];
       queryFilter.where[Op.or].push({ [key]: { [Op.in]: filter[type] } });
     }
   } else if (isRegexLike) {
     if (queryFilter.where && queryFilter.where[Op.or]) {
       filter[type].forEach((text) => {
-        queryFilter.where[Op.or].push({ [key]: { [Op[operator]]: `${text}%` } });
+        queryFilter.where[Op.or].push({ [key]: { [Op[operator]]: `${isRegexLike === 2 ? `%${text}%` : `${text}%`}` } });
       });
     } else {
-      // eslint-disable-next-line no-param-reassign
+      queryFilter.where = !queryFilter.where ? {} : queryFilter.where;
       queryFilter.where[Op.or] = [];
       filter[type].forEach((text) => {
-        queryFilter.where[Op.or].push({ [key]: { [Op.iLike]: `${text}%` } });
+        queryFilter.where[Op.or].push({ [key]: { [Op[operator]]: `${isRegexLike === 2 ? `%${text}%` : `${text}%`}` } });
       });
     }
   }
@@ -128,6 +131,7 @@ const buildFilter = (filter, queryFilter) => {
     if (filterCopy.where && filterCopy.where[Op.or]) {
       filterCopy[Op.or].push({ id: { [Op.in]: filter.ids } });
     } else {
+      filterCopy.where = !filterCopy.where ? {} : filterCopy.where;
       filterCopy.where[Op.or] = [];
       filterCopy.where[Op.or].push({ id: { [Op.in]: filter.ids } });
     }
@@ -139,15 +143,16 @@ const buildFilter = (filter, queryFilter) => {
         filterCopy.where[Op.or].push({ title: { [Op.iLike]: `${text}%` } });
       });
       if (!filter.title) {
-        buildIncludeFilter(filter, filterCopy.include[0], 'search', 'name', 'iLike', false, true);
+        buildIncludeFilter(filter, filterCopy.include[0], 'search', 'name', 'iLike', false, 1);
       }
     } else {
+      filterCopy.where = !filterCopy.where ? {} : filterCopy.where;
       filterCopy.where[Op.or] = [];
       filter.search.forEach((text) => {
         filterCopy.where[Op.or].push({ title: { [Op.iLike]: `${text}%` } });
       });
       if (!filter.title) {
-        buildIncludeFilter(filter, filterCopy.include[0], 'search', 'name', 'iLike', false, true);
+        buildIncludeFilter(filter, filterCopy.include[0], 'search', 'name', 'iLike', false, 1);
       }
     }
   }
@@ -157,12 +162,12 @@ const buildFilter = (filter, queryFilter) => {
   }
 
   if (filter.topic) {
-    buildIncludeFilter(filter, filterCopy.include[1], 'topic', 'name', 'iLike', false, true);
-    buildIncludeFilter(filter, filterCopy.include[2], 'topic', 'name', 'iLike', false, true);
+    buildIncludeFilter(filter, filterCopy.include[1], 'topic', 'name', 'iLike', false, 2);
+    buildIncludeFilter(filter, filterCopy.include[2], 'topic', 'name', 'iLike', false, 2);
   }
 
   if (filter.author) {
-    buildIncludeFilter(filter, filterCopy.include[0], 'author', 'name', 'iLike', false, true);
+    buildIncludeFilter(filter, filterCopy.include[0], 'author', 'name', 'iLike', false, 1);
   }
 
   return filterCopy;
@@ -206,6 +211,9 @@ class BooksController {
     try {
       await this.paramsFilter.validateAsync(filter);
       const filterGen = this.buildFilter(filter, getQueryFilter());
+      const page = parseInt(filter.page, 10) || 1;
+      const offset = (page - 1) * PAGE_LIMIT;
+      filterGen.offset = offset;
 
       const result = await Books.findAndCountAll(filterGen);
 
@@ -218,6 +226,21 @@ class BooksController {
         book.languages = row.languages.map((el) => el.code);
         return book;
       });
+
+      /**
+       * Pagination login
+       */
+      const totalPageCount = Math.ceil(books.count / PAGE_LIMIT);
+      const previousPage = page <= 1 ? null : page - 1;
+      const nextPageCount = page === totalPageCount ? null : page + 1;
+      books.page = page;
+      books.previousPage = previousPage;
+      books.nextPage = nextPageCount;
+      books.totalPage = totalPageCount;
+
+      /**
+      * Response from server
+      */
       debug(`found the books ${books}`);
       return books;
     } catch (error) {
