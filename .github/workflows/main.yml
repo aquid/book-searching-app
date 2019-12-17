@@ -28,7 +28,7 @@ jobs:
         echo ${{ secrets.DOCKER_HUB_PASSWORD }} | docker login -u $DOCKER_HUB_USERNAME --password-stdin
         echo 'Running Docker Build'
         docker build -t aquid/book-search-app .
-        echo 'Pushing Image to Docker Hub
+        echo 'Pushing Image to Docker Hub'
         docker push aquid/book-search-app
         echo 'Docker Image pushed to Docker Hub'
         
