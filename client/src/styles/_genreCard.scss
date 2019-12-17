@@ -1,0 +1,30 @@
+.genreCardContainer {
+  height: 50px;
+  border-radius: 4px;
+  padding-left: 10px;
+  padding-right: 10px;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  background-color: $white;
+  box-shadow: 0 2px 5px 0 rgba(211, 209, 238, 0.5);
+  cursor: pointer;
+  transition: background-color 0.5s ease;
+  &:active {
+    outline: none;
+    box-shadow: none;
+    background-color: $grey-light;
+  }
+  &:focus {
+    outline: none;
+  }
+  .row {
+    height: 100%;
+    align-items: center;
+    text-transform: uppercase;
+    .genreImage {
+      height: 30px;
+      width: auto;
+    }
+  }
+  
+}

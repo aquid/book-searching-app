@@ -1,0 +1,45 @@
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 400;
+  src:
+    local('Montserrat'),
+    local('Montserrat-Regular'),
+    url(./assets//fonts/Montserrat-SemiBold.ttf) format('truetype'),
+    url(./assets/fonts/Montserrat-SemiBold.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 300;
+  src:
+    local('Montserrat'),
+    local('Montserrat-Regular'),
+    url(./assets//fonts/Montserrat-Regular.ttf) format('truetype'),
+    url(./assets/fonts/Montserrat-Regular.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 600;
+  src:
+    local('Montserrat SemiBold'),
+    local('Montserrat-SemiBold'),
+    url(./assets/fonts/Montserrat-SemiBold.ttf) format('truetype'),
+    url(./assets/fonts/Montserrat-SemiBold.ttf) format('truetype');
+}
+
+
+@import 'styles/variable';
+@import '~bootstrap/scss/bootstrap';
+@import 'styles/home';
+@import 'styles/genreCard';
+@import 'styles/booksPage';
+@import 'styles/bookCard';
+
+body {
+  font-family: 'Montserrat', sans-serif;
+}
+

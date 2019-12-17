@@ -1,7 +1,7 @@
 /* jshint indent: 1 */
 
 module.exports = function (sequelize, DataTypes) {
-  return sequelize.define('books_subject', {
+  const Subjects = sequelize.define('Subjects', {
     id: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -14,5 +14,16 @@ module.exports = function (sequelize, DataTypes) {
     },
   }, {
     tableName: 'books_subject',
+    timestamps: false,
   });
+
+  Subjects.associate = function (models) {
+    Subjects.belongsToMany(models.Books, {
+      foreignKey: 'subject_id',
+      as: 'books',
+      through: 'books_book_subjects',
+    });
+  };
+
+  return Subjects;
 };

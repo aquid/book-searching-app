@@ -27,5 +27,6 @@ module.exports = function (sequelize, DataTypes) {
     },
   }, {
     tableName: 'books_book_languages',
+    timestamps: false,
   });
 };
