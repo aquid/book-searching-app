@@ -11,7 +11,7 @@ module.exports = {
     port: process.env.DATABASE_PORT,
     dialect: 'postgres',
     migrationStorageTableSchema: 'migration',
-    migrationStorageTableName: 'ExpenseAppMeta',
+    migrationStorageTableName: 'BookSearchAppMeta',
     pool: {
       max: 15,
       min: 0,
@@ -26,7 +26,7 @@ module.exports = {
     host: '127.0.0.1',
     dialect: 'postgres',
     migrationStorageTableSchema: 'migration',
-    migrationStorageTableName: 'ExpenseAppMeta',
+    migrationStorageTableName: 'BookSearchAppMeta',
     pool: {
       max: 15,
       min: 0,
@@ -34,17 +34,19 @@ module.exports = {
     },
   },
   production: {
-    username: 'root',
-    password: null,
-    database: 'database_production',
-    host: '127.0.0.1',
+    username: process.env.DATABASE_USERNAME,
+    password: process.env.DATABASE_PASSWORD,
+    database: process.env.DATABASE_NAME,
+    host: process.env.DATABASE_HOST,
+    port: process.env.DATABASE_PORT,
     dialect: 'postgres',
     migrationStorageTableSchema: 'migration',
-    migrationStorageTableName: 'ExpenseAppMeta',
+    migrationStorageTableName: 'BookSearchAppMeta',
     pool: {
-      max: 15,
+      max: 20,
       min: 0,
       idle: 10000,
     },
+    logging: false,
   },
 };
