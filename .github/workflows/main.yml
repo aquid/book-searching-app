@@ -1,0 +1,41 @@
+name: Push To Docker and Deploy on AWS ECS
+
+on:
+  push:
+    branches: 
+      - master
+         
+      
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Run a one-line script
+      run: echo Hello, world!
+    - name: Run a multi-line script
+      run: |
+        echo Add other actions to build,
+        echo test, and deploy your project.
+    - name: Docker Build
+      env:
+        DOCKER_HUB_USERNAME: ${{secrets.DOCKER_HUB_USERNAME}}
+        DOCKER_HUB_PASSWORD: ${{secrets.DOCKER_HUB_PASSWORD}}
+      run: |
+        echo 'Docker Login'
+        echo ${{ secrets.DOCKER_HUB_PASSWORD }} | docker login -u $DOCKER_HUB_USERNAME --password-stdin
+        echo 'Running Docker Build'
+        docker build -t aquid/book-search-app .
+        echo 'Pushing Image to Docker Hub
+        docker push aquid/book-search-app
+        echo 'Docker Image pushed to Docker Hub'
+        
+        
+        
+        
+        
+        
+        
+        
