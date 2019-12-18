@@ -2,7 +2,7 @@
 const debug = require('debug')('expense-management-app:controller:user');
 const Joi = require('@hapi/joi');
 const {
-  Books, Author, BookShelves, Subjects, Languages, Formats, Sequelize,
+  Books, Author, BookShelves, Subjects, Languages, Formats, Sequelize, sequelize,
 } = require('../database/models');
 
 const { Op } = Sequelize;
@@ -29,44 +29,46 @@ const ParamsFilter = Joi.object({
  * filter object.
  */
 const getQueryFilter = () => ({
+  limit: 25,
+  subQuery: false,
+  distinct: 'id',
+  order: [['id'], ['download_count', 'DESC NULLS LAST']],
+  attributes: [sequelize.literal('DISTINCT ON ("Books"."id") "Books"."id"'), 'download_count', 'gutenberg_id', 'media_type', 'title'],
   include: [
     {
       model: Author,
       as: 'authors',
       attributes: ['birth_year', 'death_year', 'name'],
-      // where: {},
+      required: false,
       through: { attributes: [] },
     },
     {
       model: BookShelves,
       as: 'bookshelves',
       attributes: ['name'],
-      // where: {},
+      required: false,
       through: { attributes: [] },
     },
     {
       model: Subjects,
       as: 'subjects',
-      // where: {},
+      required: false,
       through: { attributes: [] },
     },
     {
       model: Languages,
       as: 'languages',
-      // where: {},
+      required: false,
       through: { attributes: [] },
     },
     {
       model: Formats,
       as: 'formats',
-      // where: {},
+      required: false,
       attributes: ['mime_type', 'url'],
+      separate: true,
     },
   ],
-  limit: 25,
-  distinct: true,
-  // where: {},
-  order: [['download_count', 'DESC NULLS LAST']],
 });
 
 
@@ -128,46 +130,77 @@ const buildIncludeFilter = (filter, queryFilter, type, key, operator, isInArray,
 const buildFilter = (filter, queryFilter) => {
   const filterCopy = { ...queryFilter };
   if (filter.ids) {
-    if (filterCopy.where && filterCopy.where[Op.or]) {
-      filterCopy[Op.or].push({ id: { [Op.in]: filter.ids } });
+    if (filterCopy.where && filterCopy.where[Op.and]) {
+      filterCopy[Op.and].push({ id: { [Op.in]: filter.ids } });
     } else {
       filterCopy.where = !filterCopy.where ? {} : filterCopy.where;
-      filterCopy.where[Op.or] = [];
-      filterCopy.where[Op.or].push({ id: { [Op.in]: filter.ids } });
+      filterCopy.where[Op.and] = [];
+      filterCopy.where[Op.and].push({ id: { [Op.in]: filter.ids } });
     }
   }
 
-  if (filter.search || filter.title) {
-    if (filterCopy.where && filterCopy.where[Op.or]) {
+  if (filter.search || filter.title || filter.author) {
+    if (filterCopy.where && filterCopy.where[Op.and]) {
       filter.search.forEach((text) => {
-        filterCopy.where[Op.or].push({ title: { [Op.iLike]: `${text}%` } });
+        const array = [];
+        if (filter.title) array.push({ title: { [Op.iLike]: `%${text}%` } });
+        else if (filter.author) array.push({ '$authors.name$': { [Op.iLike]: `%${text}%` } });
+        else {
+          array.push({ title: { [Op.iLike]: `%${text}%` } }, { '$authors.name$': { [Op.iLike]: `%${text}%` } });
+        }
+        filterCopy.where[Op.and].push({
+          [Op.or]: array,
+        });
       });
-      if (!filter.title) {
-        buildIncludeFilter(filter, filterCopy.include[0], 'search', 'name', 'iLike', false, 1);
-      }
     } else {
       filterCopy.where = !filterCopy.where ? {} : filterCopy.where;
-      filterCopy.where[Op.or] = [];
+      filterCopy.where[Op.and] = [];
       filter.search.forEach((text) => {
-        filterCopy.where[Op.or].push({ title: { [Op.iLike]: `${text}%` } });
+        const array = [];
+        if (filter.title) array.push({ title: { [Op.iLike]: `%${text}%` } });
+        else if (filter.author) array.push({ '$authors.name$': { [Op.iLike]: `%${text}%` } });
+        else {
+          array.push({ title: { [Op.iLike]: `%${text}%` } }, { '$authors.name$': { [Op.iLike]: `%${text}%` } });
+        }
+        filterCopy.where[Op.and].push({
+          [Op.or]: array,
+        });
       });
-      if (!filter.title) {
-        buildIncludeFilter(filter, filterCopy.include[0], 'search', 'name', 'iLike', false, 1);
-      }
+    }
+  }
+
+  if (filter.topic) {
+    if (filterCopy.where && filterCopy.where[Op.and]) {
+      filter.topic.forEach((text) => {
+        filterCopy.where[Op.and].push({
+          [Op.or]: [
+            { '$subjects.name$': { [Op.iLike]: `%${text}%` } },
+            { '$bookshelves.name$': { [Op.iLike]: `%${text}%` } },
+          ],
+        });
+      });
+    } else {
+      filterCopy.where = !filterCopy.where ? {} : filterCopy.where;
+      filterCopy.where[Op.and] = [];
+      filter.topic.forEach((text) => {
+        filterCopy.where[Op.and].push({
+          [Op.or]: [
+            { '$subjects.name$': { [Op.iLike]: `%${text}%` } },
+            { '$bookshelves.name$': { [Op.iLike]: `%${text}%` } },
+          ],
+        });
+      });
     }
   }
 
   if (filter.languages) {
-    buildIncludeFilter(filter, filterCopy.include[3], 'languages', 'code', 'in', true, false);
-  }
-
-  if (filter.topic) {
-    buildIncludeFilter(filter, filterCopy.include[1], 'topic', 'name', 'iLike', false, 2);
-    buildIncludeFilter(filter, filterCopy.include[2], 'topic', 'name', 'iLike', false, 2);
-  }
-
-  if (filter.author) {
-    buildIncludeFilter(filter, filterCopy.include[0], 'author', 'name', 'iLike', false, 1);
+    if (filterCopy.where && filterCopy.where[Op.and]) {
+      filterCopy[Op.and].push({ '$languages.code$': { [Op.in]: filter.languages } });
+    } else {
+      filterCopy.where = !filterCopy.where ? {} : filterCopy.where;
+      filterCopy.where[Op.and] = [];
+      filterCopy.where[Op.and].push({ '$languages.code$': { [Op.in]: filter.languages } });
+    }
   }
 
   return filterCopy;
@@ -215,7 +248,7 @@ class BooksController {
       const offset = (page - 1) * PAGE_LIMIT;
       filterGen.offset = offset;
 
-      const result = await Books.findAndCountAll(filterGen);
+      const result = await Books.findAndCountAll(filterGen, { subQuery: false });
 
       const books = JSON.parse(JSON.stringify(result));
 
@@ -231,11 +264,15 @@ class BooksController {
        * Pagination login
        */
       const totalPageCount = Math.ceil(books.count / PAGE_LIMIT);
-      const previousPage = page <= 1 ? null : page - 1;
-      const nextPageCount = page === totalPageCount ? null : page + 1;
+      let previousPage = page <= 1 ? null : page - 1;
+      let nextPage = page === totalPageCount ? null : page + 1;
+      if (totalPageCount === 0) {
+        previousPage = null;
+        nextPage = null;
+      }
       books.page = page;
       books.previousPage = previousPage;
-      books.nextPage = nextPageCount;
+      books.nextPage = nextPage;
       books.totalPage = totalPageCount;
 
       /**

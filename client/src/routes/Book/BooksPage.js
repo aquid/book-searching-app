@@ -14,6 +14,7 @@ import axios from 'axios';
 import { DebounceInput } from 'react-debounce-input';
 import Spinner from 'react-bootstrap/Spinner';
 import debounce from 'lodash.debounce';
+import NoContent from '../../assets/images/no-result.svg';
 
 const BooksPage = () => {
   let history = useHistory();
@@ -41,12 +42,17 @@ const BooksPage = () => {
     else {
       setFilled(false);
     }
+    setPage({ page: 1, previousPage: null, nextPage: null });
+    setBooks([]);
     setSearhText(text);
   };
 
   const fetchData = async (page) => {
     setLoading(true);
-    let params = { params: { topic: searchQuery, page: page } };
+    let params = { params: { topic: searchQuery, page: page }, headers: { 
+      'Content-Type': 'application/json'
+    }};
+
     if (searhText) {
       params.params.search = searhText;
     } else {
@@ -135,6 +141,19 @@ const BooksPage = () => {
             <Spinner animation="border" variant="primary" />
           </Row>
         </Container>) : null
+      }
+      {
+        !books.length && !isLoading ? (
+          <Container>
+            <Row noGutters={true} className="justify-content-md-center noContentSection">
+              <Col xs={12} className="noContentCol">
+                <img src={NoContent} alt="no-result-found" />
+              </Col>
+              <Col xs={12} className="noContentCol">
+                <h3>No Results Found</h3>
+              </Col>
+            </Row>
+          </Container>) : null
       }
       
     </div>

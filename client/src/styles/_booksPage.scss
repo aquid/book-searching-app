@@ -68,3 +68,27 @@
   margin-top: 20px;
   margin-bottom: 20px;
 }
+
+.noContentSection {
+  margin-top: 30px;
+  padding-top: 30px;
+  padding-top: 30px;
+  @media (max-width: 576px){
+    padding-top: 10px;
+    padding-top: 30px;
+  }
+  .noContentCol {
+    display: flex;
+    justify-content: center;
+    img {
+      height: 150px;
+    }
+    h3 {
+      margin-top: 20px;
+      color: $input-color;
+      font-weight: 400;
+      font-size: 20px;
+    }
+  }
+  
+}
